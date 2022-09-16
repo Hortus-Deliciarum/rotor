@@ -7,10 +7,10 @@
 class HortusWifi
 {
   public:
-    HortusWifi(const char* ip);
+    HortusWifi(const char* ssid, const char* password, const char* ip);
     void conn();
   private:
     String _ip;
-}
+};
 
 #endif
