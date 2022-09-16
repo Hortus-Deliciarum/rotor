@@ -1,5 +1,5 @@
-#include "HortusWifi.h"
-#include "ArduinoOSCWiFi.h"
+#include <HortusWifi.h>
+#include <ArduinoOSCWiFi.h>
 
 typedef struct {
   long current_time;
@@ -7,7 +7,7 @@ typedef struct {
   long dur;
   const char * sentence;
   int _state;
-} singleton;
+} singleton;  
 
 
 const int recv_port = 54321;
