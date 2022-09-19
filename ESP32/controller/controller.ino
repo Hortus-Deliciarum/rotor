@@ -1,6 +1,6 @@
 #include <Button2.h>
 #include <RotaryEncoder.h>
-
+#include <HortusWifi.h>
 
 // Note: You also have to connect GND, 5V/VIO and VM.
 //       A connection diagram can be found in the schematics.
@@ -30,6 +30,10 @@ int debounce = 50;
 int button_state = 0;
 int button2_state = 0;
 
+const char * ssid = "..."
+const char * password = "..."
+const char * ip = "..."
+
 Button2 button1;
 Button2 button2;
 RotaryEncoder encoder1(ROTARY1_PIN1, ROTARY1_PIN2, RotaryEncoder::LatchMode::FOUR3);
@@ -57,6 +61,29 @@ void setup()
   button2.setReleasedHandler(released);
   encoder.setPosition(DEF_SPEED);
   encoder1.setPosition(DEF_SPEED);
+
+  HortusWifi(ssid, password, ip);
+
+  OscWiFi.subscribe(recv_port, "/motor1/state",
+    [](const OscMessage &m) {
+      float msg = m.arg<float>(0);
+      msg != 0 ? motor1.state = true : motor1.state = false;
+    });
+
+  OscWiFi.subscribe(recv_port, "/motor1/speed",
+    [](const OscMessage &m) {
+      float msg = m.arg<float>(0);
+    });
+
+  OscWiFi.subscribe(recv_port, "/motor2/state",
+    [](const OscMessage &m) {
+      float msg = m.arg<float>(0);
+    });
+
+  OscWiFi.subscribe(recv_port, "/motor2/speed",
+    [](const OscMessage &m) {
+      float msg = m.arg<float>(0);
+    });
   
   
   pinMode(ACTIVE1, OUTPUT);
