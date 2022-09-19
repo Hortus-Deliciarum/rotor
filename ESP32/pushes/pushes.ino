@@ -25,10 +25,12 @@
 #define ACTIVE2       4
 #define BUTTONPIN1    27
 #define BUTTONPIN2    2
+
 #define ROTARY1_PIN1  14
 #define ROTARY1_PIN2  12
 #define ROTARY2_PIN1  15
 #define ROTARY2_PIN2  13
+
 #define MAX_SPEED     5000
 #define MIN_SPEED     250
 #define DEF_SPEED     1000
@@ -96,18 +98,33 @@ void setup()
 
 void loop()
 {
-  button.loop();
-  button2.loop();
-  encoder.tick();
-  encoder1.tick();
-  check_speed(&motor1, encoder);
-  //check_speed(&motor2, encoder1);
-  check_motor(&motor1);
-  check_motor(&motor2);
-  //make steps
-
   
-  //digitalWrite(ACTIVE2, button_state);
+  button.loop();
+  //button2.loop();
+  //encoder.tick();
+  //encoder1.tick();
+  //check_speed(&motor1, encoder);
+  //check_speed(&motor2, encoder1);
+
+  static int pos = DEF_SPEED;
+  
+  encoder.tick();
+
+  int newPos = encoder.getPosition();
+  if (pos != newPos) {
+    Serial.print("pos:");
+    Serial.print(newPos);
+    Serial.print(" dir:");
+    Serial.println((int)(encoder.getDirection()));
+    int factor = newPos - pos;
+    int _newPos = constrain(factor * 100 + pos, MIN_SPEED, MAX_SPEED);
+    encoder.setPosition(_newPos);
+    pos = _newPos;
+    motor1.dur = _newPos;
+  } // if
+  
+  check_motor(&motor1);
+  //check_motor(&motor2);
 
   /*
   if (button_state) {
@@ -154,13 +171,26 @@ void check_motor(Motor *m) {
   }
 }
 
-void check_speed(Motor *m, RotaryEncoder enc) {
+void check_speed(Motor *m, RotaryEncoder _enc) { 
   /*
-  int _dir = (int)(enc.getDirection());
+  int _dir = (int)(_enc.getDirection());
   if (_dir != 0)
     Serial.println(m->dur);
+  
   m->dur = constrain(m->dur + _dir, MIN_SPEED, MAX_SPEED);
+  Serial.println(_dir);
   */
-  int di = (int)(enc.getDirection());
-  Serial.println(di);
+  _enc.tick();
+
+  int newPos = _enc.getPosition();
+
+  
+  if (m->dur != newPos) {
+    Serial.print("pos:");
+    Serial.print(newPos);
+    Serial.print(" dir:");
+    Serial.println((int)(_enc.getDirection()));
+    m->dur = newPos;
+  }
+  Serial.println(_enc.getPosition());
 }
