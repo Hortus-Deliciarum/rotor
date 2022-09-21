@@ -22,7 +22,7 @@
 #define ROTARY2_PIN2  13
 
 #define MAX_SPEED     5000
-#define MIN_SPEED     250
+#define MIN_SPEED     200
 #define DEF_SPEED     1000
 #define MULTER        100
 
@@ -30,9 +30,10 @@ int debounce = 50;
 int button_state = 0;
 int button2_state = 0;
 
-const char * ssid = "..."
-const char * password = "..."
-const char * ip = "..."
+const char * ssid = "FASTWEB-2yurFq";
+const char * password = "yBqCDXC6w8";
+const char * ip = "192.168.0.100";
+const int recv_port = 54321;
 
 Button2 button1;
 Button2 button2;
@@ -55,34 +56,37 @@ void setup()
 
   Serial.begin(115200);
 
-  button.begin(BUTTONPIN1);
+  button1.begin(BUTTONPIN1);
   button2.begin(BUTTONPIN2);
-  button.setReleasedHandler(released);
+  button1.setReleasedHandler(released);
   button2.setReleasedHandler(released);
-  encoder.setPosition(DEF_SPEED);
   encoder1.setPosition(DEF_SPEED);
+  encoder2.setPosition(DEF_SPEED);
 
   HortusWifi(ssid, password, ip);
 
   OscWiFi.subscribe(recv_port, "/motor1/state",
     [](const OscMessage &m) {
-      float msg = m.arg<float>(0);
-      msg != 0 ? motor1.state = true : motor1.state = false;
+      float _speed = m.arg<float>(0);
+      set_motor_state(&motor1, _speed);
     });
 
   OscWiFi.subscribe(recv_port, "/motor1/speed",
     [](const OscMessage &m) {
-      float msg = m.arg<float>(0);
+      float _speed = m.arg<float>(0);
+      set_motor_speed(encoder1, _speed);
     });
 
   OscWiFi.subscribe(recv_port, "/motor2/state",
     [](const OscMessage &m) {
-      float msg = m.arg<float>(0);
+      float _speed = m.arg<float>(0);
+      set_motor_state(&motor2, _speed);
     });
 
   OscWiFi.subscribe(recv_port, "/motor2/speed",
     [](const OscMessage &m) {
-      float msg = m.arg<float>(0);
+      float _speed = m.arg<float>(0);
+      set_motor_speed(encoder2, _speed);
     });
   
   
@@ -117,7 +121,7 @@ void setup()
 
 void loop()
 {
-  
+  OscWiFi.update();
   button1.loop();
   button2.loop();
   check_speed(&motor1, encoder1);
@@ -127,11 +131,24 @@ void loop()
 }
 
 void released(Button2 &btn) {
-  if (btn == button) {
+  if (btn == button1) {
     motor1.state = !motor1.state;
   } else if (btn == button2) {
     motor2.state = !motor2.state;
   }
+}
+
+void set_motor_state(Motor *m, float value) {
+  if (value)
+    m->state = true;
+  else
+    m->state = false;
+}
+
+void set_motor_speed(RotaryEncoder &_enc, float _spd) {
+  int _speed = rounder100(_spd);
+  _speed = constrain(_speed, MIN_SPEED, MAX_SPEED);
+  _enc.setPosition(_speed);
 }
 
 void check_motor(Motor *m) {
@@ -151,9 +168,14 @@ void check_speed(Motor *m, RotaryEncoder &_enc) {
   int newPos = _enc.getPosition();
   
   if (m->dur != newPos) {
-    int factor = newPos - m->dur;
-    int _newPos = constrain(factor * MULTER + m->dur, MIN_SPEED, MAX_SPEED);
+    //int factor = newPos - m->dur;
+    int _newPos = constrain(newPos, MIN_SPEED, MAX_SPEED);
     _enc.setPosition(_newPos);
-    m->dur = _newPos;
+    m->dur = newPos;
+    Serial.println(m->dur);
   }
+}
+
+int rounder100(float n) {
+  return (int)n / 100 * 100;
 }

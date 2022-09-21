@@ -21,3 +21,7 @@ wifi -.- ESP32
 |16|EN (2)|
 |17|STEP (2)|
 |5|DIR (2)|
+
+## notes
+
+Change KNOBDIR array in RotaryEncoder.cpp file. Every step is 100 (or -100) instead 1 (or -1)
