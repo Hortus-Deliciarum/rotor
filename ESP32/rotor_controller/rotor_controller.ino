@@ -67,8 +67,8 @@ void setup()
 
   OscWiFi.subscribe(recv_port, "/motor1/state",
     [](const OscMessage &m) {
-      float _speed = m.arg<float>(0);
-      set_motor_state(&motor1, _speed);
+      float _state = m.arg<float>(0);
+      set_motor_state(&motor1, _state);
     });
 
   OscWiFi.subscribe(recv_port, "/motor1/speed",
@@ -79,8 +79,8 @@ void setup()
 
   OscWiFi.subscribe(recv_port, "/motor2/state",
     [](const OscMessage &m) {
-      float _speed = m.arg<float>(0);
-      set_motor_state(&motor2, _speed);
+      float _state = m.arg<float>(0);
+      set_motor_state(&motor2, _state);
     });
 
   OscWiFi.subscribe(recv_port, "/motor2/speed",
