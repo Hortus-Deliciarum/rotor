@@ -2,6 +2,7 @@
 #include <HortusRotary.h>
 #include <HortusWifi.h>
 
+#define DEBUG 1
 #define EN_PIN1 26 // enable (CFG6)
 #define DIR_PIN1 33 // direction
 #define STEP_PIN1 25 // step
@@ -44,6 +45,12 @@ typedef struct {
 Motor motor1 = { 1, false, 0, DEF_SPEED, LOW, STEP_PIN1 };
 Motor motor2 = { 2, false, 0, DEF_SPEED, LOW, STEP_PIN2 };
 
+String ROTOR_1_STATE = "/rotor/1/state";
+String ROTOR_2_STATE = "/rotor/2/state";
+String ROTOR_1_SPEED = "/rotor/1/speed";
+String ROTOR_2_SPEED = "/rotor/2/speed";
+String AWAKE = "/rotor/awake";
+
 void setup()
 {
 
@@ -62,31 +69,47 @@ void setup()
 
     // Wifi and OSC section
 
-    HortusWifi(HortusWifi::Connection::HORTUS, 30, "/rotor/awake");
+    HortusWifi(HortusWifi::Connection::HORTUS, 30, AWAKE);
       
-    OscWiFi.subscribe(HortusWifi::RECV_PORT, "/rotor/1/state",
+    OscWiFi.subscribe(HortusWifi::RECV_PORT, ROTOR_1_STATE,
         [](const OscMessage& m) {
             float _state = m.arg<float>(0);
             set_motor_state(&motor1, _state);
-            Serial.println("received");
+            
+            _print("[ OSC RECEIVED ] ");
+            _println(ROTOR_1_STATE);
+            
+            send_osc((String&)m.address(), _state);
         });
 
-    OscWiFi.subscribe(HortusWifi::RECV_PORT, "/rotor/1/speed",
+    OscWiFi.subscribe(HortusWifi::RECV_PORT, ROTOR_1_SPEED,
         [](const OscMessage& m) {
             float _speed = m.arg<float>(0);
             set_motor_speed(encoder1, _speed);
+
+            _print("[ OSC RECEIVED ] ");
+            _println(ROTOR_1_SPEED);
+            
         });
 
-    OscWiFi.subscribe(HortusWifi::RECV_PORT, "/rotor/2/state",
+    OscWiFi.subscribe(HortusWifi::RECV_PORT, ROTOR_2_STATE,
         [](const OscMessage& m) {
             float _state = m.arg<float>(0);
             set_motor_state(&motor2, _state);
+
+            _print("[ OSC RECEIVED ] ");
+            _println(ROTOR_2_STATE);
+            
+            send_osc((String&)m.address(), _state);
         });
 
-    OscWiFi.subscribe(HortusWifi::RECV_PORT, "/rotor/2/speed",
+    OscWiFi.subscribe(HortusWifi::RECV_PORT, ROTOR_2_SPEED,
         [](const OscMessage& m) {
             float _speed = m.arg<float>(0);
             set_motor_speed(encoder2, _speed);
+
+            _print("[ OSC RECEIVED ] ");
+            _println(ROTOR_2_SPEED);
         });
 
     pinMode(ACTIVE1, OUTPUT);
@@ -132,19 +155,32 @@ void released(Button2& btn)
 {
     if (btn == button1) {
         motor1.state = !motor1.state;
-        send_osc("/rotor/1/state", (int)(motor1.state));
+        send_osc(ROTOR_1_STATE, (int)(motor1.state));
+
+        _print("[ BUTTON ACTION ] SWITCH STATE ON MOTOR 1: ");
+        _println(String(motor1.state));
     } else if (btn == button2) {
         motor2.state = !motor2.state;
-        send_osc("/rotor/2/state", (int)(motor2.state));
+        send_osc(ROTOR_2_STATE, (int)(motor2.state));
+        _print("[ BUTTON ACTION ] SWITCH STATE ON MOTOR 2: ");
+        _println(String(motor2.state));
     }
 }
 
 void set_motor_state(Motor* m, float value)
-{
-    if (value)
+{ 
+    _print("[ SET ] MOTOR ");
+    _print(String(m->number));
+    _print(" STATE: ");
+    
+    if (value) {
         m->state = true;
-    else
+        _println(String(1));
+    }
+    else {
         m->state = false;
+        _println(String(0));
+    }
 }
 
 void set_motor_speed(HortusRotary& _enc, float _spd)
@@ -173,23 +209,38 @@ void check_speed(Motor* m, HortusRotary& _enc)
     int newPos = _enc.getPosition();
 
     if (m->dur != newPos) {
-        // int factor = newPos - m->dur;
+        
         int _newPos = constrain(newPos, MIN_SPEED, MAX_SPEED);
         _enc.setPosition(_newPos);
-        m->dur = newPos;
+        m->dur = _newPos;
+
+        _print("[ NEW MOTOR DURATION ] MOTOR ");
+        _print(String(m->number));
+        _print(": ");
+        _println(String(_newPos));
+      
         if (m->number == 1)
-          send_osc("/rotor/1/speed", m->dur);
+            send_osc(ROTOR_1_SPEED, m->dur);
         else if (m->number == 2)
-          send_osc("/rotor/2/speed", m->dur);
+            send_osc(ROTOR_2_SPEED, m->dur);
     }
 }
 
-int rounder100(float n)
-{
-    return (int)n / 100 * 100;
-}
-
-void send_osc(const char* addr, int value) 
+void send_osc(String& addr, int value) 
 {
     OscWiFi.send(HortusWifi::HOST, HortusWifi::SEND_PORT, addr, value);
+}
+
+int _print(String s) {
+  #if DEBUG
+    Serial.print(s);
+  #endif
+  return 0;
+}
+
+int _println(String s) {
+  #if DEBUG
+    Serial.println(s);
+  #endif
+  return 0;
 }
